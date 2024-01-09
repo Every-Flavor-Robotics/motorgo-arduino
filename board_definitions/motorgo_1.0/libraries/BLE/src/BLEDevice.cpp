@@ -5,7 +5,7 @@
  *      Author: kolban
  */
 #include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
+#if defined(CONFIG_BLUEDROID_ENABLED)
 #include <freertos/FreeRTOS.h>
 #include <freertos/event_groups.h>
 #include <freertos/task.h>
@@ -347,7 +347,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
 			return;
 		}
 
-#ifndef CLASSIC_BT_ENABLED
+#ifndef CONFIG_BT_CLASSIC_ENABLED
 		esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT);  
 #endif
 		esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
@@ -357,7 +357,7 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
 			return;
 		}
 
-#ifndef CLASSIC_BT_ENABLED
+#ifndef CONFIG_BT_CLASSIC_ENABLED
 		errRc = esp_bt_controller_enable(ESP_BT_MODE_BLE);
 		if (errRc != ESP_OK) {
 			log_e("esp_bt_controller_enable: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
@@ -441,11 +441,26 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  * * ESP_PWR_LVL_P1
  * * ESP_PWR_LVL_P4
  * * ESP_PWR_LVL_P7
+ *
+ * The power types can be one of:
+ * * ESP_BLE_PWR_TYPE_CONN_HDL0
+ * * ESP_BLE_PWR_TYPE_CONN_HDL1
+ * * ESP_BLE_PWR_TYPE_CONN_HDL2
+ * * ESP_BLE_PWR_TYPE_CONN_HDL3
+ * * ESP_BLE_PWR_TYPE_CONN_HDL4
+ * * ESP_BLE_PWR_TYPE_CONN_HDL5
+ * * ESP_BLE_PWR_TYPE_CONN_HDL6
+ * * ESP_BLE_PWR_TYPE_CONN_HDL7
+ * * ESP_BLE_PWR_TYPE_CONN_HDL8
+ * * ESP_BLE_PWR_TYPE_ADV
+ * * ESP_BLE_PWR_TYPE_SCAN
+ * * ESP_BLE_PWR_TYPE_DEFAULT
+ * @param [in] powerType.
  * @param [in] powerLevel.
  */
-/* STATIC */ void BLEDevice::setPower(esp_power_level_t powerLevel) {
-	log_v(">> setPower: %d", powerLevel);
-	esp_err_t errRc = ::esp_ble_tx_power_set(ESP_BLE_PWR_TYPE_DEFAULT, powerLevel);
+/* STATIC */ void BLEDevice::setPower(esp_power_level_t powerLevel, esp_ble_power_type_t powerType) {
+	log_v(">> setPower: %d (type: %d)", powerLevel, powerType);
+	esp_err_t errRc = ::esp_ble_tx_power_set(powerType, powerLevel);
 	if (errRc != ESP_OK) {
 		log_e("esp_ble_tx_power_set: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	};
@@ -484,7 +499,11 @@ gatts_event_handler BLEDevice::m_customGattsHandler = nullptr;
  */
 void BLEDevice::whiteListAdd(BLEAddress address) {
 	log_v(">> whiteListAdd: %s", address.toString().c_str());
-	esp_err_t errRc = esp_ble_gap_update_whitelist(true, *address.getNative());  // True to add an entry.
+#ifdef ESP_IDF_VERSION_MAJOR
+    esp_err_t errRc = esp_ble_gap_update_whitelist(true, *address.getNative(), BLE_WL_ADDR_TYPE_PUBLIC);  // HACK!!! True to add an entry.
+#else
+    esp_err_t errRc = esp_ble_gap_update_whitelist(true, *address.getNative());  // True to add an entry.
+#endif
 	if (errRc != ESP_OK) {
 		log_e("esp_ble_gap_update_whitelist: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	}
@@ -498,7 +517,11 @@ void BLEDevice::whiteListAdd(BLEAddress address) {
  */
 void BLEDevice::whiteListRemove(BLEAddress address) {
 	log_v(">> whiteListRemove: %s", address.toString().c_str());
-	esp_err_t errRc = esp_ble_gap_update_whitelist(false, *address.getNative());  // False to remove an entry.
+#ifdef ESP_IDF_VERSION_MAJOR
+    esp_err_t errRc = esp_ble_gap_update_whitelist(false, *address.getNative(), BLE_WL_ADDR_TYPE_PUBLIC);  // HACK!!! False to remove an entry.
+#else
+    esp_err_t errRc = esp_ble_gap_update_whitelist(false, *address.getNative());  // False to remove an entry.
+#endif
 	if (errRc != ESP_OK) {
 		log_e("esp_ble_gap_update_whitelist: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
 	}
@@ -563,6 +586,12 @@ void BLEDevice::startAdvertising() {
 	log_v("<< startAdvertising");
 } // startAdvertising
 
+void BLEDevice::stopAdvertising() {
+    log_v(">> stopAdvertising");
+    getAdvertising()->stop();
+    log_v("<< stopAdvertising");
+} // stopAdvertising
+
 /* multi connect support */
 /* requires a little more work */
 std::map<uint16_t, conn_status_t> BLEDevice::getPeerDevices(bool _client) {
@@ -600,10 +629,15 @@ void BLEDevice::addPeerDevice(void* peer, bool _client, uint16_t conn_id) {
 	m_connectedClientsMap.insert(std::pair<uint16_t, conn_status_t>(conn_id, status));
 }
 
+//there may have some situation that invoking this function simultaneously, that will cause CORRUPT HEAP
+//let this function serializable
+portMUX_TYPE BLEDevice::mux = portMUX_INITIALIZER_UNLOCKED;
 void BLEDevice::removePeerDevice(uint16_t conn_id, bool _client) {
+	portENTER_CRITICAL(&mux);
 	log_i("remove: %d, GATT role %s", conn_id, _client?"client":"server");
 	if(m_connectedClientsMap.find(conn_id) != m_connectedClientsMap.end())
 		m_connectedClientsMap.erase(conn_id);
+	portEXIT_CRITICAL(&mux);
 }
 
 /* multi connect support */
@@ -640,4 +674,4 @@ void BLEDevice::setCustomGattsHandler(gatts_event_handler handler) {
 	m_customGattsHandler = handler;
 }
 
-#endif // CONFIG_BT_ENABLED
+#endif // CONFIG_BLUEDROID_ENABLED

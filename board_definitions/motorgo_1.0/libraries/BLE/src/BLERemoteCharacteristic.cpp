@@ -8,7 +8,7 @@
 #include "BLERemoteCharacteristic.h"
 
 #include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
+#if defined(CONFIG_BLUEDROID_ENABLED)
 
 #include <esp_gattc_api.h>
 #include <esp_err.h>
@@ -40,6 +40,7 @@ BLERemoteCharacteristic::BLERemoteCharacteristic(
 	m_pRemoteService = pRemoteService;
 	m_notifyCallback = nullptr;
 	m_rawData = nullptr;
+    m_auth           = ESP_GATT_AUTH_REQ_NONE;
 
 	retrieveDescriptors(); // Get the descriptors for this characteristic
 	log_v("<< BLERemoteCharacteristic");
@@ -51,6 +52,7 @@ BLERemoteCharacteristic::BLERemoteCharacteristic(
  */
 BLERemoteCharacteristic::~BLERemoteCharacteristic() {
 	removeDescriptors();   // Release resources for any descriptor information we may have allocated.
+	free(m_rawData);
 } // ~BLERemoteCharacteristic
 
 
@@ -236,7 +238,20 @@ void BLERemoteCharacteristic::gattClientEventHandler(esp_gattc_cb_event_t event,
 			break;
 		} // ESP_GATTC_WRITE_CHAR_EVT
 
+		case ESP_GATTC_READ_DESCR_EVT:
+		case ESP_GATTC_WRITE_DESCR_EVT:
+			for (auto &myPair : m_descriptorMap) {
+				myPair.second->gattClientEventHandler(
+					event, gattc_if, evtParam);
+			}
+			break;
 
+		case ESP_GATTC_DISCONNECT_EVT:
+			// Cleanup semaphores to avoid deadlocks.
+			m_semaphoreReadCharEvt.give(1);
+			m_semaphoreWriteCharEvt.give(1);
+			break;
+			
 		default:
 			break;
 	} // End switch
@@ -389,6 +404,17 @@ uint8_t BLERemoteCharacteristic::readUInt8() {
 	return 0;
 } // readUInt8
 
+/**
+ * @brief Read a float value.
+ * @return the float value.
+ */
+float BLERemoteCharacteristic::readFloat() {
+	std::string value = readValue();
+	if (value.length() >= 4) {
+		return *(float*)(value.data());
+	}
+	return 0.0;
+} // readFloat
 
 /**
  * @brief Read the value of the remote characteristic.
@@ -412,7 +438,7 @@ std::string BLERemoteCharacteristic::readValue() {
 		m_pRemoteService->getClient()->getGattcIf(),
 		m_pRemoteService->getClient()->getConnId(),    // The connection ID to the BLE server
 		getHandle(),                                   // The handle of this characteristic
-		ESP_GATT_AUTH_REQ_NONE);                       // Security
+		m_auth);                                         // Security
 
 	if (errRc != ESP_OK) {
 		log_e("esp_ble_gattc_read_char: rc=%d %s", errRc, GeneralUtils::errorToString(errRc));
@@ -434,7 +460,7 @@ std::string BLERemoteCharacteristic::readValue() {
  * unregistering a notification.
  * @return N/A.
  */
-void BLERemoteCharacteristic::registerForNotify(notify_callback notifyCallback, bool notifications) {
+void BLERemoteCharacteristic::registerForNotify(notify_callback notifyCallback, bool notifications, bool descriptorRequiresRegistration) {
 	log_v(">> registerForNotify(): %s", toString().c_str());
 
 	m_notifyCallback = notifyCallback;   // Save the notification callback.
@@ -455,7 +481,8 @@ void BLERemoteCharacteristic::registerForNotify(notify_callback notifyCallback, 
 		uint8_t val[] = {0x01, 0x00};
 		if(!notifications) val[0] = 0x02;
 		BLERemoteDescriptor* desc = getDescriptor(BLEUUID((uint16_t)0x2902));
-		desc->writeValue(val, 2);
+		if (desc != nullptr && descriptorRequiresRegistration)
+			desc->writeValue(val, 2, true);
 	} // End Register
 	else {   // If we weren't passed a callback function, then this is an unregistration.
 		esp_err_t errRc = ::esp_ble_gattc_unregister_for_notify(
@@ -470,7 +497,8 @@ void BLERemoteCharacteristic::registerForNotify(notify_callback notifyCallback, 
 
 		uint8_t val[] = {0x00, 0x00};
 		BLERemoteDescriptor* desc = getDescriptor((uint16_t)0x2902);
-		desc->writeValue(val, 2);
+		if (desc != nullptr && descriptorRequiresRegistration)
+			desc->writeValue(val, 2, true);
 	} // End Unregister
 
 	m_semaphoreRegForNotifyEvt.wait("registerForNotify");
@@ -521,7 +549,7 @@ std::string BLERemoteCharacteristic::toString() {
  * @return N/A.
  */
 void BLERemoteCharacteristic::writeValue(std::string newValue, bool response) {
-	writeValue((uint8_t*)newValue.c_str(), strlen(newValue.c_str()), response);
+	writeValue((uint8_t*)newValue.data(), newValue.length(), response);
 } // writeValue
 
 
@@ -563,7 +591,7 @@ void BLERemoteCharacteristic::writeValue(uint8_t* data, size_t length, bool resp
 		length,
 		data,
 		response?ESP_GATT_WRITE_TYPE_RSP:ESP_GATT_WRITE_TYPE_NO_RSP,
-		ESP_GATT_AUTH_REQ_NONE
+        m_auth
 	);
 
 	if (errRc != ESP_OK) {
@@ -584,4 +612,12 @@ uint8_t* BLERemoteCharacteristic::readRawData() {
 	return m_rawData;
 }
 
-#endif /* CONFIG_BT_ENABLED */
+/**
+ * @brief Set authentication request type for characteristic
+ * @param [in] auth Authentication request type.
+ */
+void BLERemoteCharacteristic::setAuth(esp_gatt_auth_req_t auth) {
+    m_auth = auth;
+}
+
+#endif /* CONFIG_BLUEDROID_ENABLED */

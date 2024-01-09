@@ -28,6 +28,7 @@
 #include <memory>
 #include <WiFi.h>
 #include "HTTP_Method.h"
+#include "Uri.h"
 
 enum HTTPUploadStatus { UPLOAD_FILE_START, UPLOAD_FILE_WRITE, UPLOAD_FILE_END,
                         UPLOAD_FILE_ABORTED };
@@ -84,13 +85,13 @@ public:
   void requestAuthentication(HTTPAuthMethod mode = BASIC_AUTH, const char* realm = NULL, const String& authFailMsg = String("") );
 
   typedef std::function<void(void)> THandlerFunction;
-  void on(const String &uri, THandlerFunction handler);
-  void on(const String &uri, HTTPMethod method, THandlerFunction fn);
-  void on(const String &uri, HTTPMethod method, THandlerFunction fn, THandlerFunction ufn);
+  void on(const Uri &uri, THandlerFunction fn);
+  void on(const Uri &uri, HTTPMethod method, THandlerFunction fn); 
+  void on(const Uri &uri, HTTPMethod method, THandlerFunction fn, THandlerFunction ufn); //ufn handles file uploads
   void addHandler(RequestHandler* handler);
   void serveStatic(const char* uri, fs::FS& fs, const char* path, const char* cache_header = NULL );
   void onNotFound(THandlerFunction fn);  //called when handler is not assigned
-  void onFileUpload(THandlerFunction fn); //handle file uploads
+  void onFileUpload(THandlerFunction ufn); //handle file uploads
 
   String uri() { return _currentUri; }
   HTTPMethod method() { return _currentMethod; }
@@ -104,11 +105,13 @@ public:
   int args();                     // get arguments count
   bool hasArg(String name);       // check if argument exists
   void collectHeaders(const char* headerKeys[], const size_t headerKeysCount); // set the request headers to collect
-  String header(String name);      // get request header value by name
-  String header(int i);              // get request header value by number
-  String headerName(int i);          // get request header name by number
-  int headers();                     // get header count
-  bool hasHeader(String name);       // check if header exists
+  String header(String name);     // get request header value by name
+  String header(int i);           // get request header value by number
+  String headerName(int i);       // get request header name by number
+  int headers();                  // get header count
+  bool hasHeader(String name);    // check if header exists
+
+  int clientContentLength() { return _clientContentLength; }      // return "content-length" of incoming HTTP header from "_currentClient"
 
   String hostHeader();            // get request host header if available or empty String if not
 
@@ -119,23 +122,27 @@ public:
   void send(int code, const char* content_type = NULL, const String& content = String(""));
   void send(int code, char* content_type, const String& content);
   void send(int code, const String& content_type, const String& content);
+  void send(int code, const char* content_type, const char* content);
+
   void send_P(int code, PGM_P content_type, PGM_P content);
   void send_P(int code, PGM_P content_type, PGM_P content, size_t contentLength);
 
+  void enableDelay(boolean value);
   void enableCORS(boolean value = true);
   void enableCrossOrigin(boolean value = true);
 
   void setContentLength(const size_t contentLength);
   void sendHeader(const String& name, const String& value, bool first = false);
   void sendContent(const String& content);
+  void sendContent(const char* content, size_t contentLength);
   void sendContent_P(PGM_P content);
   void sendContent_P(PGM_P content, size_t size);
 
   static String urlDecode(const String& text);
 
   template<typename T>
-  size_t streamFile(T &file, const String& contentType) {
-    _streamFileCore(file.size(), file.name(), contentType);
+  size_t streamFile(T &file, const String& contentType, const int code = 200) {
+    _streamFileCore(file.size(), file.name(), contentType, code);
     return _currentClient.write(file);
   }
 
@@ -155,7 +162,7 @@ protected:
   void _prepareHeader(String& response, int code, const char* content_type, size_t contentLength);
   bool _collectHeader(const char* headerName, const char* headerValue);
 
-  void _streamFileCore(const size_t fileSize, const String & fileName, const String & contentType);
+  void _streamFileCore(const size_t fileSize, const String & fileName, const String & contentType, const int code = 200);
 
   String _getRandomHexString();
   // for extracting Auth parameters
@@ -175,6 +182,7 @@ protected:
   uint8_t     _currentVersion;
   HTTPClientStatus _currentStatus;
   unsigned long _statusChange;
+  boolean     _nullDelay;
 
   RequestHandler*  _currentHandler;
   RequestHandler*  _firstHandler;
@@ -192,6 +200,7 @@ protected:
   int              _headerKeysCount;
   RequestArgument* _currentHeaders;
   size_t           _contentLength;
+  int              _clientContentLength;	// "Content-Length" from header of incoming POST or GET request
   String           _responseHeaders;
 
   String           _hostHeader;

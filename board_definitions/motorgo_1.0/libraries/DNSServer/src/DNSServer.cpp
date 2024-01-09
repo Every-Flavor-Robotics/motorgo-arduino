@@ -2,6 +2,12 @@
 #include <lwip/def.h>
 #include <Arduino.h>
 
+// #define DEBUG_ESP_DNS
+#ifdef DEBUG_ESP_PORT
+#define DEBUG_OUTPUT DEBUG_ESP_PORT
+#else
+#define DEBUG_OUTPUT Serial
+#endif
 
 DNSServer::DNSServer()
 {
@@ -12,6 +18,22 @@ DNSServer::DNSServer()
   _buffer     = NULL;
   _currentPacketSize = 0;
   _port = 0;
+}
+
+DNSServer::~DNSServer()
+{
+  if (_dnsHeader) {
+    free(_dnsHeader);
+    _dnsHeader = NULL;
+  }
+  if (_dnsQuestion) {
+    free(_dnsQuestion);
+    _dnsQuestion = NULL;
+  }
+  if (_buffer) {
+    free(_buffer);
+    _buffer = NULL;
+  }
 }
 
 bool DNSServer::start(const uint16_t &port, const String &domainName,
@@ -153,8 +175,6 @@ String DNSServer::getDomainNameWithoutWwwPrefix()
 
 void DNSServer::replyWithIP()
 {
-  if (_buffer == NULL) return;
-  
   _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
   
   // Change the type of message to a response and set the number of answers equal to 
@@ -184,16 +204,20 @@ void DNSServer::replyWithIP()
   _udp.write((unsigned char*) &answerIPv4, 2 );
   _udp.write(_resolvedIP, sizeof(_resolvedIP)); // The IP address to return
   _udp.endPacket();
+
+  #ifdef DEBUG_ESP_DNS
+    DEBUG_OUTPUT.printf("DNS responds: %s for %s\n",
+            IPAddress(_resolvedIP).toString().c_str(), getDomainNameWithoutWwwPrefix().c_str() );
+  #endif  
 }
 
 void DNSServer::replyWithCustomCode()
 {
-  if (_buffer == NULL) return;
   _dnsHeader->QR = DNS_QR_RESPONSE;
   _dnsHeader->RCode = (unsigned char)_errorReplyCode;
   _dnsHeader->QDCount = 0;
 
   _udp.beginPacket(_udp.remoteIP(), _udp.remotePort());
-  _udp.write(_buffer, sizeof(DNSHeader));
+  _udp.write((unsigned char*)_dnsHeader, sizeof(DNSHeader));
   _udp.endPacket();
 }

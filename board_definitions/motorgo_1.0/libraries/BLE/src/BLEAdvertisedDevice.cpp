@@ -12,7 +12,7 @@
  *      Author: kolban
  */
 #include "sdkconfig.h"
-#if defined(CONFIG_BT_ENABLED)
+#if defined(CONFIG_BLUEDROID_ENABLED)
 #include <sstream>
 #include "BLEAdvertisedDevice.h"
 #include "BLEUtils.h"
@@ -25,7 +25,9 @@ BLEAdvertisedDevice::BLEAdvertisedDevice() {
 	m_manufacturerData = "";
 	m_name             = "";
 	m_rssi             = -9999;
-	m_serviceData      = "";
+	m_serviceUUIDs     = {};
+	m_serviceData      = {};
+	m_serviceDataUUIDs = {};
 	m_txPower          = 0;
 	m_pScan            = nullptr;
 
@@ -33,8 +35,6 @@ BLEAdvertisedDevice::BLEAdvertisedDevice() {
 	m_haveManufacturerData = false;
 	m_haveName             = false;
 	m_haveRSSI             = false;
-	m_haveServiceData      = false;
-	m_haveServiceUUID      = false;
 	m_haveTXPower          = false;
 
 } // BLEAdvertisedDevice
@@ -101,31 +101,76 @@ BLEScan* BLEAdvertisedDevice::getScan() {
 	return m_pScan;
 } // getScan
 
+/**
+ * @brief Get the number of service data.
+ * @return Number of service data discovered.
+ */
+int BLEAdvertisedDevice::getServiceDataCount() {
+	return m_serviceData.size();
+} //getServiceDataCount
 
 /**
  * @brief Get the service data.
  * @return The ServiceData of the advertised device.
  */
 std::string BLEAdvertisedDevice::getServiceData() {
-	return m_serviceData;
+	return m_serviceData.empty() ? std::string() : m_serviceData.front();
 } //getServiceData
 
+/**
+ * @brief Get the service data.
+ * @return The ServiceData of the advertised device.
+ */
+std::string BLEAdvertisedDevice::getServiceData(int i) {
+	return m_serviceData[i];
+} //getServiceData
+
+/**
+ * @brief Get the number of service data UUIDs.
+ * @return Number of service data UUIDs discovered.
+ */
+int BLEAdvertisedDevice::getServiceDataUUIDCount() {
+	return m_serviceDataUUIDs.size();
+} //getServiceDataUUIDCount
 
 /**
  * @brief Get the service data UUID.
  * @return The service data UUID.
  */
 BLEUUID BLEAdvertisedDevice::getServiceDataUUID() {
-	return m_serviceDataUUID;
+	return m_serviceDataUUIDs.empty() ? BLEUUID() : m_serviceDataUUIDs.front();
 } // getServiceDataUUID
 
+/**
+ * @brief Get the service data UUID.
+ * @return The service data UUID.
+ */
+BLEUUID BLEAdvertisedDevice::getServiceDataUUID(int i) {
+	return m_serviceDataUUIDs[i];
+} // getServiceDataUUID
+
+/**
+ * @brief Get the number of service UUIDs.
+ * @return Number of service UUIDs discovered.
+ */
+int BLEAdvertisedDevice::getServiceUUIDCount() {
+	return m_serviceUUIDs.size();
+} //getServiceUUIDCount
 
 /**
  * @brief Get the Service UUID.
  * @return The Service UUID of the advertised device.
  */
-BLEUUID BLEAdvertisedDevice::getServiceUUID() {  //TODO Remove it eventually, is no longer useful
-	return m_serviceUUIDs[0];
+BLEUUID BLEAdvertisedDevice::getServiceUUID() {
+	return m_serviceUUIDs.empty() ? BLEUUID() : m_serviceUUIDs.front();
+} // getServiceUUID
+
+/**
+ * @brief Get the Service UUID.
+ * @return The Service UUID of the advertised device.
+ */
+BLEUUID BLEAdvertisedDevice::getServiceUUID(int i) {
+	return m_serviceUUIDs[i];
 } // getServiceUUID
 
 /**
@@ -133,7 +178,7 @@ BLEUUID BLEAdvertisedDevice::getServiceUUID() {  //TODO Remove it eventually, is
  * @return Return true if service is advertised
  */
 bool BLEAdvertisedDevice::isAdvertisingService(BLEUUID uuid){
-	for (int i = 0; i < m_serviceUUIDs.size(); i++) {
+	for (int i = 0; i < getServiceUUIDCount(); i++) {
 		if (m_serviceUUIDs[i].equals(uuid)) return true;
 	}
 	return false;
@@ -190,7 +235,7 @@ bool BLEAdvertisedDevice::haveRSSI() {
  * @return True if there is a service data value present.
  */
 bool BLEAdvertisedDevice::haveServiceData() {
-	return m_haveServiceData;
+	return !m_serviceData.empty();
 } // haveServiceData
 
 
@@ -199,7 +244,7 @@ bool BLEAdvertisedDevice::haveServiceData() {
  * @return True if there is a service UUID value present.
  */
 bool BLEAdvertisedDevice::haveServiceUUID() {
-	return m_haveServiceUUID;
+	return !m_serviceUUIDs.empty();
 } // haveServiceUUID
 
 
@@ -354,6 +399,15 @@ void BLEAdvertisedDevice::parseAdvertisement(uint8_t* payload, size_t total_len)
 	} // !finished
 } // parseAdvertisement
 
+/**
+ * @brief Parse the advertising payload.
+ * @param [in] payload The payload of the advertised device.
+ * @param [in] total_len The length of payload
+ */
+void BLEAdvertisedDevice::setPayload(uint8_t* payload, size_t total_len) {
+	m_payload = payload;
+	m_payloadLength = total_len;
+} // setPayload
 
 /**
  * @brief Set the address of the advertised device.
@@ -443,7 +497,6 @@ void BLEAdvertisedDevice::setServiceUUID(const char* serviceUUID) {
  */
 void BLEAdvertisedDevice::setServiceUUID(BLEUUID serviceUUID) {
 	m_serviceUUIDs.push_back(serviceUUID);
-	m_haveServiceUUID = true;
 	log_d("- addServiceUUID(): serviceUUID: %s", serviceUUID.toString().c_str());
 } // setServiceUUID
 
@@ -453,8 +506,7 @@ void BLEAdvertisedDevice::setServiceUUID(BLEUUID serviceUUID) {
  * @param [in] data ServiceData value.
  */
 void BLEAdvertisedDevice::setServiceData(std::string serviceData) {
-	m_haveServiceData = true;         // Set the flag that indicates we have service data.
-	m_serviceData     = serviceData;  // Save the service data that we received.
+	m_serviceData.push_back(serviceData); // Save the service data that we received.
 } //setServiceData
 
 
@@ -463,8 +515,8 @@ void BLEAdvertisedDevice::setServiceData(std::string serviceData) {
  * @param [in] data ServiceDataUUID value.
  */
 void BLEAdvertisedDevice::setServiceDataUUID(BLEUUID uuid) {
-	m_haveServiceData = true;         // Set the flag that indicates we have service data.
-	m_serviceDataUUID = uuid;
+	m_serviceDataUUIDs.push_back(uuid);
+	log_d("- addServiceDataUUID(): serviceDataUUID: %s", uuid.toString().c_str());
 } // setServiceDataUUID
 
 
@@ -498,13 +550,26 @@ std::string BLEAdvertisedDevice::toString() {
 		free(pHex);
 	}
 	if (haveServiceUUID()) {
-		res += ", serviceUUID: " + getServiceUUID().toString();
+		for (int i=0; i < getServiceUUIDCount(); i++) {
+		    res += ", serviceUUID: " + getServiceUUID(i).toString();
+		}
 	}
 	if (haveTXPower()) {
-		char val[4];
+		char val[6];
 		snprintf(val, sizeof(val), "%d", getTXPower());
 		res += ", txPower: ";
 		res += val;
+	}
+	if (haveRSSI()) {
+	       char val[4];
+	       snprintf(val, sizeof(val), "%i", getRSSI());
+	       res += ", rssi: ";
+	       res += val;
+	 }
+	if (haveServiceData()) {
+		for (int i=0; i <getServiceDataCount(); i++) {
+			res += ", serviceData: " + getServiceData(i);
+		}
 	}
 	return res;
 } // toString
@@ -525,5 +590,5 @@ size_t BLEAdvertisedDevice::getPayloadLength() {
 	return m_payloadLength;
 }
 
-#endif /* CONFIG_BT_ENABLED */
+#endif /* CONFIG_BLUEDROID_ENABLED */
 

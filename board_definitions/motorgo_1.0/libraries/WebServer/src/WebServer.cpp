@@ -33,7 +33,8 @@
 
 
 static const char AUTHORIZATION_HEADER[] = "Authorization";
-static const char qop_auth[] = "qop=auth";
+static const char qop_auth[] PROGMEM = "qop=auth";
+static const char qop_auth_quoted[] PROGMEM = "qop=\"auth\"";
 static const char WWW_Authenticate[] = "WWW-Authenticate";
 static const char Content_Length[] = "Content-Length";
 
@@ -45,6 +46,7 @@ WebServer::WebServer(IPAddress addr, int port)
 , _currentVersion(0)
 , _currentStatus(HC_NONE)
 , _statusChange(0)
+, _nullDelay(true)
 , _currentHandler(nullptr)
 , _firstHandler(nullptr)
 , _lastHandler(nullptr)
@@ -55,8 +57,10 @@ WebServer::WebServer(IPAddress addr, int port)
 , _headerKeysCount(0)
 , _currentHeaders(nullptr)
 , _contentLength(0)
+, _clientContentLength(0)
 , _chunked(false)
 {
+  log_v("WebServer::Webserver(addr=%s, port=%d)", addr.toString().c_str(), port);
 }
 
 WebServer::WebServer(int port)
@@ -66,6 +70,7 @@ WebServer::WebServer(int port)
 , _currentVersion(0)
 , _currentStatus(HC_NONE)
 , _statusChange(0)
+, _nullDelay(true)
 , _currentHandler(nullptr)
 , _firstHandler(nullptr)
 , _lastHandler(nullptr)
@@ -76,8 +81,10 @@ WebServer::WebServer(int port)
 , _headerKeysCount(0)
 , _currentHeaders(nullptr)
 , _contentLength(0)
+, _clientContentLength(0)
 , _chunked(false)
 {
+  log_v("WebServer::Webserver(port=%d)", port);
 }
 
 WebServer::~WebServer() {
@@ -120,9 +127,9 @@ static String md5str(String &in){
     return String(out);
   memset(_buf, 0x00, 16);
   mbedtls_md5_init(&_ctx);
-  mbedtls_md5_starts(&_ctx);
-  mbedtls_md5_update(&_ctx, (const uint8_t *)in.c_str(), in.length());
-  mbedtls_md5_finish(&_ctx, _buf);
+  mbedtls_md5_starts_ret(&_ctx);
+  mbedtls_md5_update_ret(&_ctx, (const uint8_t *)in.c_str(), in.length());
+  mbedtls_md5_finish_ret(&_ctx, _buf);
   for(i = 0; i < 16; i++) {
     sprintf(out + (i * 2), "%02x", _buf[i]);
   }
@@ -161,17 +168,17 @@ bool WebServer::authenticate(const char * username, const char * password){
     } else if(authReq.startsWith(F("Digest"))) {
       authReq = authReq.substring(7);
       log_v("%s", authReq.c_str());
-      String _username = _extractParam(authReq,F("username=\""));
+      String _username = _extractParam(authReq,F("username=\""),'\"');
       if(!_username.length() || _username != String(username)) {
         authReq = "";
         return false;
       }
       // extracting required parameters for RFC 2069 simpler Digest
-      String _realm    = _extractParam(authReq, F("realm=\""));
-      String _nonce    = _extractParam(authReq, F("nonce=\""));
-      String _uri      = _extractParam(authReq, F("uri=\""));
-      String _response = _extractParam(authReq, F("response=\""));
-      String _opaque   = _extractParam(authReq, F("opaque=\""));
+      String _realm    = _extractParam(authReq, F("realm=\""),'\"');
+      String _nonce    = _extractParam(authReq, F("nonce=\""),'\"');
+      String _uri      = _extractParam(authReq, F("uri=\""),'\"');
+      String _response = _extractParam(authReq, F("response=\""),'\"');
+      String _opaque   = _extractParam(authReq, F("opaque=\""),'\"');
 
       if((!_realm.length()) || (!_nonce.length()) || (!_uri.length()) || (!_response.length()) || (!_opaque.length())) {
         authReq = "";
@@ -183,9 +190,9 @@ bool WebServer::authenticate(const char * username, const char * password){
       }
       // parameters for the RFC 2617 newer Digest
       String _nc,_cnonce;
-      if(authReq.indexOf(FPSTR(qop_auth)) != -1) {
+      if(authReq.indexOf(FPSTR(qop_auth)) != -1 || authReq.indexOf(FPSTR(qop_auth_quoted)) != -1) {
         _nc = _extractParam(authReq, F("nc="), ',');
-        _cnonce = _extractParam(authReq, F("cnonce=\""));
+        _cnonce = _extractParam(authReq, F("cnonce=\""),'\"');
       }
       String _H1 = md5str(String(username) + ':' + _realm + ':' + String(password));
       log_v("Hash of user:realm:pass=%s", _H1.c_str());
@@ -203,7 +210,7 @@ bool WebServer::authenticate(const char * username, const char * password){
       }
       log_v("Hash of GET:uri=%s", _H2.c_str());
       String _responsecheck = "";
-      if(authReq.indexOf(FPSTR(qop_auth)) != -1) {
+      if(authReq.indexOf(FPSTR(qop_auth)) != -1 || authReq.indexOf(FPSTR(qop_auth_quoted)) != -1) {
           _responsecheck = md5str(_H1 + ':' + _nonce + ':' + _nc + ':' + _cnonce + F(":auth:") + _H2);
       } else {
           _responsecheck = md5str(_H1 + ':' + _nonce + ':' + _H2);
@@ -245,15 +252,15 @@ void WebServer::requestAuthentication(HTTPAuthMethod mode, const char* realm, co
   send(401, String(FPSTR(mimeTable[html].mimeType)), authFailMsg);
 }
 
-void WebServer::on(const String &uri, WebServer::THandlerFunction handler) {
+void WebServer::on(const Uri &uri, WebServer::THandlerFunction handler) {
   on(uri, HTTP_ANY, handler);
 }
 
-void WebServer::on(const String &uri, HTTPMethod method, WebServer::THandlerFunction fn) {
+void WebServer::on(const Uri &uri, HTTPMethod method, WebServer::THandlerFunction fn) {
   on(uri, method, fn, _fileUploadHandler);
 }
 
-void WebServer::on(const String &uri, HTTPMethod method, WebServer::THandlerFunction fn, WebServer::THandlerFunction ufn) {
+void WebServer::on(const Uri &uri, HTTPMethod method, WebServer::THandlerFunction fn, WebServer::THandlerFunction ufn) {
   _addRequestHandler(new FunctionRequestHandler(fn, ufn, uri, method));
 }
 
@@ -278,14 +285,16 @@ void WebServer::serveStatic(const char* uri, FS& fs, const char* path, const cha
 
 void WebServer::handleClient() {
   if (_currentStatus == HC_NONE) {
-    WiFiClient client = _server.available();
-    if (!client) {
+    _currentClient = _server.available();
+    if (!_currentClient) {
+      if (_nullDelay) {
+        delay(1);
+      }
       return;
     }
 
-    log_v("New client");
+    log_v("New client: client.localIP()=%s", _currentClient.localIP().toString().c_str());
 
-    _currentClient = client;
     _currentStatus = HC_WAIT_READ;
     _statusChange = millis();
   }
@@ -308,11 +317,12 @@ void WebServer::handleClient() {
           _contentLength = CONTENT_LENGTH_NOT_SET;
           _handleRequest();
 
-          if (_currentClient.connected()) {
-            _currentStatus = HC_WAIT_CLOSE;
-            _statusChange = millis();
-            keepCurrentClient = true;
-          }
+// Fix for issue with Chrome based browsers: https://github.com/espressif/arduino-esp32/issues/3652
+//           if (_currentClient.connected()) {
+//             _currentStatus = HC_WAIT_CLOSE;
+//             _statusChange = millis();
+//             keepCurrentClient = true;
+//           }
         }
       } else { // !_currentClient.available()
         if (millis() - _statusChange <= HTTP_MAX_DATA_WAIT) {
@@ -370,6 +380,10 @@ void WebServer::setContentLength(const size_t contentLength) {
     _contentLength = contentLength;
 }
 
+void WebServer::enableDelay(boolean value) {
+  _nullDelay = value;
+}
+
 void WebServer::enableCORS(boolean value) {
   _corsEnabled = value;
 }
@@ -402,6 +416,8 @@ void WebServer::_prepareHeader(String& response, int code, const char* content_t
     }
     if (_corsEnabled) {
         sendHeader(String(FPSTR("Access-Control-Allow-Origin")), String("*"));
+	sendHeader(String(FPSTR("Access-Control-Allow-Methods")), String("*"));
+	sendHeader(String(FPSTR("Access-Control-Allow-Headers")), String("*"));
     }
     sendHeader(String(F("Connection")), String(F("close")));
 
@@ -415,10 +431,30 @@ void WebServer::send(int code, const char* content_type, const String& content) 
     // Can we asume the following?
     //if(code == 200 && content.length() == 0 && _contentLength == CONTENT_LENGTH_NOT_SET)
     //  _contentLength = CONTENT_LENGTH_UNKNOWN;
+    if (content.length() == 0) {
+        log_w("content length is zero");
+    }
     _prepareHeader(header, code, content_type, content.length());
     _currentClientWrite(header.c_str(), header.length());
     if(content.length())
       sendContent(content);
+}
+
+void WebServer::send(int code, char* content_type, const String& content) {
+  send(code, (const char*)content_type, content);
+}
+
+void WebServer::send(int code, const String& content_type, const String& content) {
+  send(code, (const char*)content_type.c_str(), content);
+}
+
+void WebServer::send(int code, const char* content_type, const char* content)
+{
+    const String passStr = (String)content;
+    if (strlen(content) != passStr.length()) {
+       log_e("String cast failed.  Use send_P for long arrays");
+    }
+    send(code, content_type, passStr);
 }
 
 void WebServer::send_P(int code, PGM_P content_type, PGM_P content) {
@@ -445,29 +481,24 @@ void WebServer::send_P(int code, PGM_P content_type, PGM_P content, size_t conte
     sendContent_P(content, contentLength);
 }
 
-void WebServer::send(int code, char* content_type, const String& content) {
-  send(code, (const char*)content_type, content);
-}
-
-void WebServer::send(int code, const String& content_type, const String& content) {
-  send(code, (const char*)content_type.c_str(), content);
-}
-
 void WebServer::sendContent(const String& content) {
+  sendContent(content.c_str(), content.length());
+}
+
+void WebServer::sendContent(const char* content, size_t contentLength) {
   const char * footer = "\r\n";
-  size_t len = content.length();
   if(_chunked) {
     char * chunkSize = (char *)malloc(11);
     if(chunkSize){
-      sprintf(chunkSize, "%x%s", len, footer);
+      sprintf(chunkSize, "%x%s", contentLength, footer);
       _currentClientWrite(chunkSize, strlen(chunkSize));
       free(chunkSize);
     }
   }
-  _currentClientWrite(content.c_str(), len);
+  _currentClientWrite(content, contentLength);
   if(_chunked){
     _currentClient.write(footer, 2);
-    if (len == 0) {
+    if (contentLength == 0) {
       _chunked = false;
     }
   }
@@ -497,7 +528,7 @@ void WebServer::sendContent_P(PGM_P content, size_t size) {
 }
 
 
-void WebServer::_streamFileCore(const size_t fileSize, const String & fileName, const String & contentType)
+void WebServer::_streamFileCore(const size_t fileSize, const String & fileName, const String & contentType, const int code)
 {
   using namespace mime;
   setContentLength(fileSize);
@@ -506,7 +537,7 @@ void WebServer::_streamFileCore(const size_t fileSize, const String & fileName, 
       contentType != String(FPSTR(mimeTable[none].mimeType))) {
     sendHeader(F("Content-Encoding"), F("gzip"));
   }
-  send(200, contentType, "");
+  send(code, contentType, "");
 }
 
 String WebServer::pathArg(unsigned int i) {

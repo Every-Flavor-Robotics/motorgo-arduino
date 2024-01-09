@@ -35,46 +35,59 @@
 HTTPUpdate::HTTPUpdate(void)
         : _httpClientTimeout(8000), _ledPin(-1)
 {
+    _followRedirects = HTTPC_DISABLE_FOLLOW_REDIRECTS;
 }
 
 HTTPUpdate::HTTPUpdate(int httpClientTimeout)
         : _httpClientTimeout(httpClientTimeout), _ledPin(-1)
 {
+    _followRedirects = HTTPC_DISABLE_FOLLOW_REDIRECTS;
 }
 
 HTTPUpdate::~HTTPUpdate(void)
 {
 }
 
-HTTPUpdateResult HTTPUpdate::update(WiFiClient& client, const String& url, const String& currentVersion)
+HTTPUpdateResult HTTPUpdate::update(WiFiClient& client, const String& url, const String& currentVersion, HTTPUpdateRequestCB requestCB)
 {
     HTTPClient http;
     if(!http.begin(client, url))
     {
         return HTTP_UPDATE_FAILED;
     }
-    return handleUpdate(http, currentVersion, false);
+    return handleUpdate(http, currentVersion, false, requestCB);
 }
 
-HTTPUpdateResult HTTPUpdate::updateSpiffs(WiFiClient& client, const String& url, const String& currentVersion)
+HTTPUpdateResult HTTPUpdate::updateSpiffs(HTTPClient& httpClient, const String& currentVersion, HTTPUpdateRequestCB requestCB)
+{
+    return handleUpdate(httpClient, currentVersion, true, requestCB);
+}
+
+HTTPUpdateResult HTTPUpdate::updateSpiffs(WiFiClient& client, const String& url, const String& currentVersion, HTTPUpdateRequestCB requestCB)
 {
     HTTPClient http;
     if(!http.begin(client, url))
     {
         return HTTP_UPDATE_FAILED;
     }
-    return handleUpdate(http, currentVersion, true);
+    return handleUpdate(http, currentVersion, true, requestCB);
+}
+
+HTTPUpdateResult HTTPUpdate::update(HTTPClient& httpClient,
+        const String& currentVersion, HTTPUpdateRequestCB requestCB)
+{
+    return handleUpdate(httpClient, currentVersion, false, requestCB);
 }
 
 HTTPUpdateResult HTTPUpdate::update(WiFiClient& client, const String& host, uint16_t port, const String& uri,
-        const String& currentVersion)
+        const String& currentVersion, HTTPUpdateRequestCB requestCB)
 {
     HTTPClient http;
     if(!http.begin(client, host, port, uri))
     {
         return HTTP_UPDATE_FAILED;
     }
-    return handleUpdate(http, currentVersion, false);
+    return handleUpdate(http, currentVersion, false, requestCB);
 }
 
 /**
@@ -167,7 +180,7 @@ String getSketchSHA256() {
  * @param currentVersion const char *
  * @return HTTPUpdateResult
  */
-HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& currentVersion, bool spiffs)
+HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& currentVersion, bool spiffs, HTTPUpdateRequestCB requestCB)
 {
 
     HTTPUpdateResult ret = HTTP_UPDATE_FAILED;
@@ -175,6 +188,7 @@ HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& curren
     // use HTTP/1.0 for update since the update handler not support any transfer Encoding
     http.useHTTP10(true);
     http.setTimeout(_httpClientTimeout);
+    http.setFollowRedirects(_followRedirects);
     http.setUserAgent("ESP32-http-Update");
     http.addHeader("Cache-Control", "no-cache");
     http.addHeader("x-ESP32-STA-MAC", WiFi.macAddress());
@@ -201,6 +215,9 @@ HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& curren
 
     if(currentVersion && currentVersion[0] != 0x00) {
         http.addHeader("x-ESP32-version", currentVersion);
+    }
+    if (requestCB) {
+        requestCB(&http);
     }
 
     const char * headerkeys[] = { "x-MD5" };
@@ -270,6 +287,10 @@ HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& curren
                 _lastError = HTTP_UE_TOO_LESS_SPACE;
                 ret = HTTP_UPDATE_FAILED;
             } else {
+                // Warn main app we're starting up...
+                if (_cbStart) {
+                    _cbStart();
+                }
 
                 WiFiClient * tcp = http.getStreamPtr();
 
@@ -324,6 +345,10 @@ HTTPUpdateResult HTTPUpdate::handleUpdate(HTTPClient& http, const String& curren
                     ret = HTTP_UPDATE_OK;
                     log_d("Update ok\n");
                     http.end();
+                    // Warn main app we're all done
+                    if (_cbEnd) {
+                        _cbEnd();
+                    }
 
                     if(_rebootOnUpdate && !spiffs) {
                         ESP.restart();
@@ -375,12 +400,20 @@ bool HTTPUpdate::runUpdate(Stream& in, uint32_t size, String md5, int command)
 
     StreamString error;
 
+    if (_cbProgress) {
+        Update.onProgress(_cbProgress);
+    }
+
     if(!Update.begin(size, command, _ledPin, _ledOn)) {
         _lastError = Update.getError();
         Update.printError(error);
         error.trim(); // remove line ending
         log_e("Update.begin failed! (%s)\n", error.c_str());
         return false;
+    }
+
+    if (_cbProgress) {
+        _cbProgress(0, size);
     }
 
     if(md5.length()) {
@@ -399,6 +432,10 @@ bool HTTPUpdate::runUpdate(Stream& in, uint32_t size, String md5, int command)
         error.trim(); // remove line ending
         log_e("Update.writeStream failed! (%s)\n", error.c_str());
         return false;
+    }
+
+    if (_cbProgress) {
+        _cbProgress(size, size);
     }
 
     if(!Update.end()) {

@@ -172,7 +172,7 @@ void parseRmt(rmt_data_t* items, size_t len, uint32_t* channels){
     }
 }
 
-extern "C" void receive_data(uint32_t *data, size_t len)
+extern "C" void receive_data(uint32_t *data, size_t len, void * arg)
 {
     parseRmt((rmt_data_t*) data, len, channels);
 }
@@ -182,7 +182,7 @@ void setup()
     Serial.begin(115200);
     
     // Initialize the channel to capture up to 192 items
-    if ((rmt_recv = rmtInit(21, false, RMT_MEM_192)) == NULL)
+    if ((rmt_recv = rmtInit(21, RMT_RX_MODE, RMT_MEM_192)) == NULL)
     {
         Serial.println("init receiver failed\n");
     }
@@ -192,7 +192,7 @@ void setup()
     Serial.printf("real tick set to: %fns\n", realTick);
 
     // Ask to start reading
-    rmtRead(rmt_recv, receive_data);
+    rmtRead(rmt_recv, receive_data, NULL);
 }
 
 void loop() 
