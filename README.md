@@ -40,11 +40,9 @@ Next, you'll have to install the MotorGo board definition, which is available in
 * Click `Install`
 
 **PlatformIO**
-* Navigate to PlatformIO Home
-* Go to `Platforms`
-* Select `Advanced Installation`
-* Paste `https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/board_definitions/motorgo_1.0.zip` and click `Install`
-** This is untested... **
+* Clone this respotory
+* Navigate to board_definitions/
+* Run the python script `python3 setup_platformio.py`
 
 
 ## Library
