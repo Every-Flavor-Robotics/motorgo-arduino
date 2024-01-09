@@ -24,7 +24,8 @@ Since the MotorGo boards are based on the ESP32, you'll have to first install th
 
 
 Next, you'll have to install the MotorGo board definition, which is available in this respository.
-** Arduino IDE 2.X**
+
+**Arduino IDE 2.X**
 * Go to `File > Preferences`
 * Add `https://raw.githubusercontent.com/Every-Flavor-Robotics/motorgo-arduino/main/board_definitions/package_motorgo_index.json` to `Additional Boards Manager URLs`
 * Go to `Tools > Board > Boards Manager...`
