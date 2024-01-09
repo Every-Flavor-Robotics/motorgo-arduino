@@ -1,7 +1,7 @@
 {
     "packages": [
         {
-            "name": "motorgo-mini-v1",
+            "name": "motorgo_v1.0",
             "maintainer": "MotorGo LLC",
             "websiteURL": "https://motorgo.com",
             "email": "support@motorgo.com",
@@ -13,8 +13,8 @@
                     "category": "Contributed",
                     "url": "https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/board_definitions/motorgo_1.0.zip",
                     "archiveFileName": "motorgo_1.0.zip",
-                    "checksum": "SHA-256:f5809a045ac9b55cfd8a77c3ef014a9c70d86b8ab22008c4879d45c4b0d87f84",
-                    "size": "79748679",
+                    "checksum": "SHA-256:e85c2707bbed369713a8dc3df3e95bcbc74d059995b85fca0648a48789a056e8",
+                    "size": "79735031",
                     "boards": [
                         {
                             "name": "MotorGo Mini V1 Rev1"
