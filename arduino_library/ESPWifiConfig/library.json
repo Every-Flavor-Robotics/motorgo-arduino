@@ -1,0 +1,53 @@
+{
+    "name": "ESPWifiConfig",
+    "version": "0.1.1",
+    "description": "Creates parameters that can be configured via REST endpoints",
+    "authors": [
+        {
+            "name": "Swapnil Pande",
+            "email": "swapnil.pande98@gmail.com",
+            "maintainer": true
+        }
+    ],
+    "keywords": [
+        "ESP32",
+        "WebServer",
+        "Async",
+        "REST",
+        "Wifi",
+        "Config"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Roam-Studios/esp-wifi-config.git"
+    },
+    "dependencies": [
+        {
+            "name": "WiFi",
+            "version": "*"
+        },
+        {
+            "name": "ESP Async WebServer",
+            "version": "^1.2.3",
+            "owner": "me-no-dev"
+        },
+        {
+            "name": "AsyncTCP",
+            "owner": "me-no-dev"
+        },
+        {
+            "name": "Arduino_JSON",
+            "version": "*",
+            "repository": "https://github.com/arduino-libraries/Arduino_JSON.git"
+        }
+    ],
+    "platforms": [
+        "espressif32"
+    ],
+    "frameworks": [
+        "arduino"
+    ],
+    "build": {
+        "flags": []
+    }
+}
