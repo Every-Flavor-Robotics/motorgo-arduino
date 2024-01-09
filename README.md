@@ -39,7 +39,7 @@ Next, you'll have to install the MotorGo board definition, which is available in
 * Search for `MotorGo`
 * Click `Install`
 
-** PlatformIO **
+**PlatformIO**
 * Navigate to PlatformIO Home
 * Go to `Platforms`
 * Select `Advanced Installation`
