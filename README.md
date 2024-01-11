@@ -49,8 +49,8 @@ Next, you'll have to install the MotorGo board definition, which is available in
 Below are the instructions for installing the MotorGo library. 
 
 **Arduino IDE 1.X/2.X**
-* Download the latest release in `arduino_library/motorgo-mini-driver.zip` or [click here](https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/arduino_library/motorgo-mini-driver.zip)
-* Go to `Sketch > Include Library > Add .ZIP Library...` and select the downloaded file
+* Download the latest release in `arduino_library/motorgo-mini-driver.zip` AND `arduino_library/esp-wifi-config.zip` or [click here](https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/arduino_library/motorgo-mini-driver.zip) AND [here](https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/arduino_library/esp-wifi-config.zip)
+* Go to `Sketch > Include Library > Add .ZIP Library...` and select the two downloaded ZIP files
 
 
 **PlatformIO**
