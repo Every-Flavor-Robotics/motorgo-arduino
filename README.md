@@ -46,10 +46,10 @@ Next, you'll have to install the MotorGo board definition, which is available in
 
 
 ## Library
-Below are the instructions for installing the MotorGo library. The source code  for the library is available [here](https://github.com/Every-Flavor-Robotics/motorgo-mini-driver.git).
+Below are the instructions for installing the MotorGo library. 
 
 **Arduino IDE 1.X/2.X**
-* Download the latest release in `arduino_library/motorgo-mini-driver.zip`
+* Download the latest release in `arduino_library/motorgo-mini-driver.zip` or [click here](https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/arduino_library/motorgo-mini-driver.zip)
 * Go to `Sketch > Include Library > Add .ZIP Library...` and select the downloaded file
 
 
@@ -59,5 +59,7 @@ Below are the instructions for installing the MotorGo library. The source code  
 lib_deps =
     https://github.com/Every-Flavor-Robotics/motorgo-mini-driver.git
 ``````
+
+The source code  for the library is available [here](https://github.com/Every-Flavor-Robotics/motorgo-mini-driver.git).
 
 ```
