@@ -58,8 +58,6 @@ Below are the instructions for installing the MotorGo library.
 ```
 lib_deps =
     https://github.com/Every-Flavor-Robotics/motorgo-mini-driver.git
-``````
+```
 
 The source code  for the library is available [here](https://github.com/Every-Flavor-Robotics/motorgo-mini-driver.git).
-
-```
