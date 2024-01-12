@@ -11,7 +11,7 @@
                     "architecture": "esp32",
                     "version": "1.0",
                     "category": "Contributed",
-                    "url": "https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/main/board_definitions/motorgo_1.0.zip",
+                    "url": "https://github.com/Every-Flavor-Robotics/motorgo-arduino/raw/bug-1/enable-usb-cdc/board_definitions/motorgo_1.0.zip",
                     "archiveFileName": "motorgo_1.0.zip",
                     "checksum": "SHA-256:eff55e09e861e3576fee7d7e445efe385d5c7931ae8975635aef9c830bf3c2be",
                     "size": "79735033",
