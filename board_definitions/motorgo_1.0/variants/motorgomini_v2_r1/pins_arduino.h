@@ -50,7 +50,7 @@ static const uint8_t CH0_VL = 16;
 static const uint8_t CH0_WH = 18;
 static const uint8_t CH0_WL = 15;
 static const uint8_t CH0_CURRENT_U = 5;
-static const uint8_t CH0_CURRENT_W = MOTORGO_GPIO_NOT_SET;
+static const uint8_t CH0_CURRENT_V = MOTORGO_GPIO_NOT_SET;
 static const uint8_t CH0_CURRENT_W = 4;
 
 // ch1 Motor and Encoder pins
@@ -62,7 +62,7 @@ static const uint8_t CH1_VL = 11;
 static const uint8_t CH1_WH = 13;
 static const uint8_t CH1_WL = 10;
 static const uint8_t CH1_CURRENT_U = 6;
-static const uint8_t CH1_CURRENT_W = MOTORGO_GPIO_NOT_SET;
+static const uint8_t CH1_CURRENT_V = MOTORGO_GPIO_NOT_SET;
 static const uint8_t CH1_CURRENT_W = 7;
 
 static const uint8_t CURRENT_SENSE_AMP_GAIN = 50;
