@@ -49,7 +49,7 @@ motorgomini_v1_r1.build.variant=motorgomini_v1_r1
 motorgomini_v1_r1.build.board=MOTORGOMINI_V1_R1
 
 motorgomini_v1_r1.build.usb_mode=1
-motorgomini_v1_r1.build.cdc_on_boot=0
+motorgomini_v1_r1.build.cdc_on_boot=1
 motorgomini_v1_r1.build.msc_on_boot=0
 motorgomini_v1_r1.build.dfu_on_boot=0
 motorgomini_v1_r1.build.f_cpu=240000000L
@@ -135,9 +135,9 @@ motorgomini_v1_r1.menu.USBMode.hwcdc.build.usb_mode=1
 motorgomini_v1_r1.menu.USBMode.default=USB-OTG (TinyUSB)
 motorgomini_v1_r1.menu.USBMode.default.build.usb_mode=0
 
-motorgomini_v1_r1.menu.CDCOnBoot.default=Disabled
-motorgomini_v1_r1.menu.CDCOnBoot.default.build.cdc_on_boot=0
-motorgomini_v1_r1.menu.CDCOnBoot.cdc=Enabled
+motorgomini_v1_r1.menu.CDCOnBoot.default=Enabled
+motorgomini_v1_r1.menu.CDCOnBoot.default.build.cdc_on_boot=1
+motorgomini_v1_r1.menu.CDCOnBoot.cdc=Disabled
 motorgomini_v1_r1.menu.CDCOnBoot.cdc.build.cdc_on_boot=1
 
 motorgomini_v1_r1.menu.MSCOnBoot.default=Disabled
@@ -276,7 +276,7 @@ motorgomini_v1_r2.build.variant=motorgomini_v1_r2
 motorgomini_v1_r2.build.board=MOTORGOMINI_V1_R2
 
 motorgomini_v1_r2.build.usb_mode=1
-motorgomini_v1_r2.build.cdc_on_boot=0
+motorgomini_v1_r2.build.cdc_on_boot=1
 motorgomini_v1_r2.build.msc_on_boot=0
 motorgomini_v1_r2.build.dfu_on_boot=0
 motorgomini_v1_r2.build.f_cpu=240000000L
@@ -362,9 +362,9 @@ motorgomini_v1_r2.menu.USBMode.hwcdc.build.usb_mode=1
 motorgomini_v1_r2.menu.USBMode.default=USB-OTG (TinyUSB)
 motorgomini_v1_r2.menu.USBMode.default.build.usb_mode=0
 
-motorgomini_v1_r2.menu.CDCOnBoot.default=Disabled
-motorgomini_v1_r2.menu.CDCOnBoot.default.build.cdc_on_boot=0
-motorgomini_v1_r2.menu.CDCOnBoot.cdc=Enabled
+motorgomini_v1_r2.menu.CDCOnBoot.default=Enabled
+motorgomini_v1_r2.menu.CDCOnBoot.default.build.cdc_on_boot=1
+motorgomini_v1_r2.menu.CDCOnBoot.cdc=Disabled
 motorgomini_v1_r2.menu.CDCOnBoot.cdc.build.cdc_on_boot=1
 
 motorgomini_v1_r2.menu.MSCOnBoot.default=Disabled
@@ -501,7 +501,7 @@ motorgomini_v2_r1.build.variant=motorgomini_v2_r1
 motorgomini_v2_r1.build.board=MOTORGOMINI_V2_R1
 
 motorgomini_v2_r1.build.usb_mode=1
-motorgomini_v2_r1.build.cdc_on_boot=0
+motorgomini_v2_r1.build.cdc_on_boot=1
 motorgomini_v2_r1.build.msc_on_boot=0
 motorgomini_v2_r1.build.dfu_on_boot=0
 motorgomini_v2_r1.build.f_cpu=240000000L
@@ -587,9 +587,9 @@ motorgomini_v2_r1.menu.USBMode.hwcdc.build.usb_mode=1
 motorgomini_v2_r1.menu.USBMode.default=USB-OTG (TinyUSB)
 motorgomini_v2_r1.menu.USBMode.default.build.usb_mode=0
 
-motorgomini_v2_r1.menu.CDCOnBoot.default=Disabled
-motorgomini_v2_r1.menu.CDCOnBoot.default.build.cdc_on_boot=0
-motorgomini_v2_r1.menu.CDCOnBoot.cdc=Enabled
+motorgomini_v2_r1.menu.CDCOnBoot.default=Enabled
+motorgomini_v2_r1.menu.CDCOnBoot.default.build.cdc_on_boot=1
+motorgomini_v2_r1.menu.CDCOnBoot.cdc=Disabled
 motorgomini_v2_r1.menu.CDCOnBoot.cdc.build.cdc_on_boot=1
 
 motorgomini_v2_r1.menu.MSCOnBoot.default=Disabled
