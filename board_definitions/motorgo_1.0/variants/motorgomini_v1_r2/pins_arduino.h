@@ -43,25 +43,26 @@ static const uint8_t ENC_MOSI = 45;
 
 // ch0 Motor and Encoder pins
 static const uint8_t CH0_ENC_CS = 37;
-static const uint8_t CH0_GPIO_UH = 18;
-static const uint8_t CH0_GPIO_UL = 15;
-static const uint8_t CH0_GPIO_VH = 17;
-static const uint8_t CH0_GPIO_VL = 5;
-static const uint8_t CH0_GPIO_WH = 16;
-static const uint8_t CH0_GPIO_WL = 6;
+static const uint8_t CH0_UH = 18;
+static const uint8_t CH0_UL = 15;
+static const uint8_t CH0_VH = 17;
+static const uint8_t CH0_VL = 5;
+static const uint8_t CH0_WH = 16;
+static const uint8_t CH0_WL = 6;
 static const uint8_t CH0_CURRENT_U = 7;
 static const uint8_t CH0_CURRENT_W = MOTORGO_GPIO_NOT_SET;
 static const uint8_t CH0_CURRENT_W = 4;
 
 // ch1 Motor and Encoder pins
 static const uint8_t CH1_ENC_CS = 48;
-static const uint8_t CH1_GPIO_UH = 9;
-static const uint8_t CH1_GPIO_UL = 13;
-static const uint8_t CH1_GPIO_VH = 10;
-static const uint8_t CH1_GPIO_VL = 21;
-static const uint8_t CH1_GPIO_WH = 11;
-static const uint8_t CH1_GPIO_WL = 14;
+static const uint8_t CH1_UH = 9;
+static const uint8_t CH1_UL = 13;
+static const uint8_t CH1_VH = 10;
+static const uint8_t CH1_VL = 21;
+static const uint8_t CH1_WH = 11;
+static const uint8_t CH1_WL = 14;
 static const uint8_t CH1_CURRENT_U = 8;
+static const uint8_t CH0_CURRENT_W = MOTORGO_GPIO_NOT_SET;
 static const uint8_t CH1_CURRENT_W = 12;
 
 static const uint8_t CURRENT_SENSE_AMP_GAIN = 200;
