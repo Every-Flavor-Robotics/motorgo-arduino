@@ -7,7 +7,7 @@ import glob
 
 # Global variables
 # Path to PIO files
-PIO_PATH = "%HOMEPATH%\.platformio"
+PIO_PATH = "~/.platformio"
 RELATIVE_PLATFORM_PATH = "platforms/espressif32/"
 RELATIVE_PACKAGES_PATH = "packages/framework-arduinoespressif32"
 
