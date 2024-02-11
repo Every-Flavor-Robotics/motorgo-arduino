@@ -7,8 +7,7 @@ import glob
 
 # Global variables
 # Path to PIO files
-WINDOWS_PIO = "%HOMEPATH%\.platformio"
-UNIX_PIO = "~/.platformio"
+PIO_PATH = "%HOMEPATH%\.platformio"
 RELATIVE_PLATFORM_PATH = "platforms/espressif32/"
 RELATIVE_PACKAGES_PATH = "packages/framework-arduinoespressif32"
 
@@ -21,14 +20,7 @@ def main():
     # Get OS
     os_name = sys.platform
 
-    # Get path to PIO
-    if os_name == "win32":
-        pio_path = WINDOWS_PIO
-        print("Detected Windows system")
-    else:
-        print("Detected Mac or Linux system")
-        pio_path = UNIX_PIO
-    pio_path = os.path.expanduser(pio_path)
+    pio_path = os.path.expanduser(PIO_PATH)
     print("PlatformIO path: " + pio_path)
 
     print("Copying...")
