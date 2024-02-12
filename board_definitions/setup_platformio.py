@@ -33,6 +33,20 @@ def main():
 
     print("Copying...")
 
+    # Print ~/.platformio folder contents
+    print("PlatformIO folder contents:")
+    for root, dirs, files in os.walk(pio_path):
+        for file in files:
+            print(os.path.join(root, file))
+
+    # Print platformio packages folder contents
+    print("PlatformIO packages folder contents:")
+    for root, dirs, files in os.walk(os.path.join(pio_path, "packages")):
+        for file in files:
+            print(os.path.join(root, file))
+
+    print("-------------------")
+
     packages_path = os.path.join(pio_path, RELATIVE_PACKAGES_PATH)
     platform_path = os.path.join(pio_path, RELATIVE_PLATFORM_PATH)
     variants_path = os.path.join(pio_path, RELATIVE_PACKAGES_PATH, "variants")
