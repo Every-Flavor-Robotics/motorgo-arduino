@@ -36,7 +36,7 @@ static const uint8_t ENC_SDA = 35;
 static const uint8_t ENC_SCL = 36;
 
 // ch0 Motor and Encoder pins
-static const uint8_t CH0_ENC_CS = 37;
+static const uint8_t CH0_ENC_CS = 48;
 static const uint8_t CH0_GPIO_UH = 9;
 static const uint8_t CH0_GPIO_UL = 17;
 static const uint8_t CH0_GPIO_VH = 8;
@@ -47,7 +47,7 @@ static const uint8_t CH0_CURRENT_U = 5;
 static const uint8_t CH0_CURRENT_W = 4;
 
 // ch1 Motor and Encoder pins
-static const uint8_t CH1_ENC_CS = 48;
+static const uint8_t CH1_ENC_CS = 37;
 static const uint8_t CH1_GPIO_UH = 21;
 static const uint8_t CH1_GPIO_UL = 12;
 static const uint8_t CH1_GPIO_VH = 14;
