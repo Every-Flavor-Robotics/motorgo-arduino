@@ -20,15 +20,15 @@
 // Green built-in LED
 static const uint8_t LED_BUILTIN = 38;
 // Blue LED used to indicate network activity
-static const uint8_t LED_NETWORK = 8;
+static const uint8_t LED_NETWORK = 47;
 #define BUILTIN_LED LED_BUILTIN  // backward compatibility
 #define LED_BUILTIN LED_BUILTIN
 
 static const uint8_t TX = 43;
 static const uint8_t RX = 44;
 
-static const uint8_t SDA = 38;
-static const uint8_t SCL = 39;
+static const uint8_t SDA = 2;
+static const uint8_t SCL = 1;
 static const uint8_t QWIIC_SDA = SDA;
 static const uint8_t QWIIC_SCL = SCL;
 
@@ -36,7 +36,7 @@ static const uint8_t ENC_SDA = 35;
 static const uint8_t ENC_SCL = 36;
 
 // ch0 Motor and Encoder pins
-static const uint8_t CH0_ENC_CS = 48;
+static const uint8_t CH0_ENC_CS = 37;
 static const uint8_t CH0_GPIO_UH = 9;
 static const uint8_t CH0_GPIO_UL = 17;
 static const uint8_t CH0_GPIO_VH = 8;
@@ -47,7 +47,7 @@ static const uint8_t CH0_CURRENT_U = 5;
 static const uint8_t CH0_CURRENT_W = 4;
 
 // ch1 Motor and Encoder pins
-static const uint8_t CH1_ENC_CS = 37;
+static const uint8_t CH1_ENC_CS = 48;
 static const uint8_t CH1_GPIO_UH = 21;
 static const uint8_t CH1_GPIO_UL = 12;
 static const uint8_t CH1_GPIO_VH = 14;
