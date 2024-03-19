@@ -25,12 +25,7 @@ void WebServer::connect_to_wifi(String wifi_ssid, String wifi_password)
 {
   // Connect to Wi-Fi
   Serial.println("Connecting to Wi-Fi...");
-
-  char ssid[100];
-  char password[100];
-  wifi_ssid.toCharArray(ssid, 100);
-  wifi_password.toCharArray(password, 100);
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifi_ssid.c_str(), wifi_password.c_str());
 
   while (WiFi.status() != WL_CONNECTED)
   {
